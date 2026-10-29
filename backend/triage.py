@@ -91,6 +91,24 @@ GEARBOX_CRITICAL = re.compile(
     r"\b(increas\w*|worsen\w*|abnormal|loud)\b.*\b(vibrat\w*|abnormal noise|grinding)\b",
     re.IGNORECASE,
 )
+NEGATED_BEFORE = re.compile(
+    r"\b(?:no|without|denied|negative|ruled out|absence of|free of)\b"
+    r"(?:[,\s]+(?!but\b|however\b|although\b|except\b)\w+){0,5}[,\s]*$|"
+    r"\bnot\s+(?:(?:currently|presently|experiencing|showing|reporting|"
+    r"observed|detected|present|active)\s*)$",
+    re.IGNORECASE,
+)
+NEGATED_AFTER = re.compile(
+    r"^\W*(?:\w+\W+){0,3}(?:not\s+(?:detected|observed|present|found|seen)|"
+    r"ruled out|absent)\b",
+    re.IGNORECASE,
+)
+RESOLVED_AFTER = re.compile(
+    r"^\W*(?:\w+\W+){0,4}(?:cleared|resolved|inactive|deactivated|normal|"
+    r"no longer active|no longer present|no longer occurring)\b",
+    re.IGNORECASE,
+)
+CLAUSE_BOUNDARIES = re.compile(r"[.;!?\n]")
 
 
 def load_examples() -> list[dict[str, str]]:
@@ -104,19 +122,37 @@ VECTORIZER = TfidfVectorizer(ngram_range=(1, 2), stop_words="english")
 EXAMPLE_VECTORS = VECTORIZER.fit_transform(EXAMPLE_TEXTS)
 
 
+def _is_negated(match: re.Match[str], text: str) -> bool:
+    clause_start = 0
+    for boundary in CLAUSE_BOUNDARIES.finditer(text, 0, match.start()):
+        clause_start = boundary.end()
+    before = text[max(clause_start, match.start() - 80) : match.start()]
+    after = text[match.end() : match.end() + 80]
+    return bool(
+        NEGATED_BEFORE.search(before)
+        or NEGATED_AFTER.search(after)
+        or RESOLVED_AFTER.search(after)
+    )
+
+
+def _has_active_match(pattern: str | re.Pattern[str], text: str) -> bool:
+    compiled = pattern if isinstance(pattern, re.Pattern) else re.compile(pattern, re.IGNORECASE)
+    return any(not _is_negated(match, text) for match in compiled.finditer(text))
+
+
 def _match_rule(text: str) -> CategoryRule | None:
     for rule in CATEGORY_RULES:
-        if all(re.search(pattern, text, re.IGNORECASE) for pattern in rule.patterns):
+        if all(_has_active_match(pattern, text) for pattern in rule.patterns):
             return rule
     return None
 
 
 def _severity(text: str, rule: CategoryRule | None) -> tuple[str, str]:
-    if CRITICAL_SIGNALS.search(text):
+    if _has_active_match(CRITICAL_SIGNALS, text):
         return "critical", "An explicit immediate safety or containment signal was found."
-    if rule and rule.category == "gearbox_vibration" and GEARBOX_CRITICAL.search(text):
+    if rule and rule.category == "gearbox_vibration" and _has_active_match(GEARBOX_CRITICAL, text):
         return "critical", "Worsening gearbox vibration or abnormal noise warrants urgent inspection."
-    if HIGH_SIGNALS.search(text):
+    if _has_active_match(HIGH_SIGNALS, text):
         return "high", "A repeated trip, thermal alarm, or pitch fault signal was found."
     if rule:
         return rule.baseline_severity, "Severity follows the category baseline; confirm against site impact and safety procedures."
@@ -143,7 +179,7 @@ def triage_ticket(description: str, asset_type: str = "unknown") -> dict[str, An
         route_to = rule.route_to
         confidence = "high" if similarity >= 0.12 else "medium"
         disposition = "routed"
-        matched_signals = [pattern for pattern in rule.patterns if re.search(pattern, combined_text, re.IGNORECASE)]
+        matched_signals = [pattern for pattern in rule.patterns if _has_active_match(pattern, combined_text)]
     else:
         category = "manual_review"
         root_cause = "No supported fault pattern matched; the cause is undetermined."

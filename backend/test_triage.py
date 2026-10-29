@@ -34,6 +34,44 @@ class TriageTests(unittest.TestCase):
         self.assertEqual(result["severity"], "critical")
         self.assertEqual(result["category"], "manual_review")
 
+    def test_negated_safety_signal_does_not_override_active_fault(self):
+        result = triage_ticket(
+            "No fire or smoke observed; inverter has a high temperature alarm", "solar"
+        )
+
+        self.assertEqual(result["category"], "inverter_thermal")
+        self.assertEqual(result["severity"], "high")
+
+    def test_contrast_clause_keeps_active_safety_signal(self):
+        result = triage_ticket(
+            "No fire, but smoke observed near the inverter", "solar"
+        )
+
+        self.assertEqual(result["severity"], "critical")
+
+    def test_not_detected_safety_signal_is_ignored(self):
+        result = triage_ticket("Smoke was not detected near the array", "solar")
+
+        self.assertEqual(result["severity"], "medium")
+        self.assertEqual(result["category"], "manual_review")
+
+    def test_cleared_alarm_is_not_routed_as_an_active_fault(self):
+        result = triage_ticket(
+            "No overheating; inverter thermal alarm cleared and normal", "solar"
+        )
+
+        self.assertEqual(result["category"], "manual_review")
+        self.assertEqual(result["severity"], "medium")
+        self.assertEqual(result["disposition"], "manual_review")
+
+    def test_not_reflected_grid_instruction_is_still_an_active_mismatch(self):
+        result = triage_ticket(
+            "Curtailment instruction not reflected in generation dashboard", "grid"
+        )
+
+        self.assertEqual(result["category"], "grid_curtailment")
+        self.assertEqual(result["disposition"], "routed")
+
     def test_result_includes_retrieval_and_auditable_steps(self):
         result = triage_ticket(EXAMPLES[0]["description"], EXAMPLES[0]["asset_type"])
 
