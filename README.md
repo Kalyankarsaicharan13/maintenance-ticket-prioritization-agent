@@ -69,7 +69,13 @@ The bundled CSV contains only six synthetic labeled tickets. The current rules m
 
 The repository includes a multi-stage `Dockerfile` and `render.yaml`. The Docker build compiles the React app with Node 22, installs the Python dependencies, and copies both into one FastAPI web service. Render supplies `PORT`; the container uses it and serves the React build from FastAPI. No API keys or external services are required.
 
-To deploy, push the repository to GitHub, then in Render choose **New + → Blueprint** and select this repository. Render reads `render.yaml` to create the Docker web service and configure the `/api/health` check. Alternatively, choose **New Web Service**, connect the repository, and select the Docker runtime with the repository root as the context. After deployment, open the generated `onrender.com` domain and verify `/api/health` returns `status: ok`, then open `/` to check the UI. Add the public deployment URL here after deployment; this workspace contains the Render configuration but has not performed a live deployment.
+Live app: [https://maintenance-ticket-prioritization-agent.onrender.com](https://maintenance-ticket-prioritization-agent.onrender.com). The health endpoint at [https://maintenance-ticket-prioritization-agent.onrender.com/api/health](https://maintenance-ticket-prioritization-agent.onrender.com/api/health) returns `status: ok`.
+
+## Demo notes
+
+The dashboard loads six bundled maintenance tickets sorted by severity. Select a ticket or enter an asset type and issue description to see the suggested severity, category, probable cause, recommended action, route, closest reference ticket, and agent trace. Unknown fault descriptions are sent to manual review. The live demo uses synthetic example data; the displayed 100% label match is an in-sample check, not an independent accuracy estimate.
+
+![Fielddesk live maintenance triage dashboard](demo-screenshot.png)
 
 ## Project layout
 
