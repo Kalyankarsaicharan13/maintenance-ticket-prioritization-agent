@@ -1,0 +1,10 @@
+{
+  "name": "fielddesk-maintenance-triage-deploy",
+  "private": true,
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "npm --prefix frontend ci && npm --prefix frontend run build"
+  }
+}
