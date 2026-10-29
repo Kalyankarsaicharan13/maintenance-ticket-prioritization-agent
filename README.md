@@ -65,9 +65,11 @@ The bundled CSV contains only six synthetic labeled tickets. The current rules m
 - Retrieval returns one of six examples, including for an unknown ticket; a low similarity does not make the example relevant. Similarity is shown to let the reviewer judge it.
 - The UI/API are a prototype, not an authenticated or audited maintenance-management system. No work order is actually created or dispatched.
 
-## Railway deployment
+## Render deployment
 
-`railway.json` defines the Nixpacks build, React production build, FastAPI start command, and `/api/health` check. Push the repository to GitHub, create a Railway project from that repository, and deploy. Railway supplies `PORT`; no API key or external service is required. After a successful deployment, open the generated Railway domain and verify `/api/health` and the queue UI. Add the public deployment URL here after deployment; this repository configuration is deployment-ready, but a Railway deployment has not been performed from this workspace.
+The repository includes a multi-stage `Dockerfile` and `render.yaml`. The Docker build compiles the React app with Node 22, installs the Python dependencies, and copies both into one FastAPI web service. Render supplies `PORT`; the container uses it and serves the React build from FastAPI. No API keys or external services are required.
+
+To deploy, push the repository to GitHub, then in Render choose **New + → Blueprint** and select this repository. Render reads `render.yaml` to create the Docker web service and configure the `/api/health` check. Alternatively, choose **New Web Service**, connect the repository, and select the Docker runtime with the repository root as the context. After deployment, open the generated `onrender.com` domain and verify `/api/health` returns `status: ok`, then open `/` to check the UI. Add the public deployment URL here after deployment; this workspace contains the Render configuration but has not performed a live deployment.
 
 ## Project layout
 
@@ -76,6 +78,7 @@ The bundled CSV contains only six synthetic labeled tickets. The current rules m
 - `backend/test_triage.py`: focused unit tests.
 - `frontend/src/`: React operations console and responsive styling.
 - `data/maintenance_tickets.csv`: bundled synthetic examples.
+- `Dockerfile` and `render.yaml`: Render Docker build, web service, and health check.
 
 # Evaluation Rubric
 
@@ -92,6 +95,6 @@ Score each submission out of 100 using the same Greenko AI/ML intern screening p
 | API/backend design | 8 |
 | Frontend usability and explanation clarity | 8 |
 | Documentation and reproducibility | 8 |
-| Deployment readiness, including Railway deployment step | 6 |
+| Deployment readiness, including Render deployment step | 6 |
 
 Strong submissions should clearly explain assumptions, limitations, failure cases, and next steps for productionization.

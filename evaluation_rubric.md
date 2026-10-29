@@ -13,6 +13,6 @@ Score each submission out of 100 using the same Greenko AI/ML intern screening p
 | API/backend design | 8 |
 | Frontend usability and explanation clarity | 8 |
 | Documentation and reproducibility | 8 |
-| Deployment readiness, including Railway deployment step | 6 |
+| Deployment readiness, including Render deployment step | 6 |
 
 Strong submissions should clearly explain assumptions, limitations, failure cases, and next steps for productionization.
